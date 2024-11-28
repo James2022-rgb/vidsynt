@@ -1,18 +1,15 @@
 [package]
 name = "vidsynt"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["serde", "mp4"]
+default = ["serde"]
 serde = ["dep:serde"]
-mp4 = ["dep:mp4"]
 
 [dependencies]
 tracing = { version = "0.1", features = ["log"] }
 bitstream-io = "2.2.0"
 serde = { version = "1", features = ["derive"], optional = true }
-
-mp4 = { git = "https://github.com/James2022-rgb/mp4-rust", optional = true }

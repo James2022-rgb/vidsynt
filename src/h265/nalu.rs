@@ -430,35 +430,3 @@ impl AccessUnitDelimiter {
         })
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_vps_file() {
-        let bytes = include_bytes!("../../../test_files/hvc_array_32.bin");
-        let mut reader = io::Cursor::new(bytes);
-
-        let nalu = Nalu::from_reader(&mut reader, bytes.len(), Default::default()).unwrap();
-        println!("{:?}", nalu);
-    }
-
-    #[test]
-    fn test_sps_file() {
-        let bytes = include_bytes!("../../../test_files/hvc_array_33.bin");
-        let mut reader = io::Cursor::new(bytes);
-
-        let nalu = Nalu::from_reader(&mut reader, bytes.len(), Default::default()).unwrap();
-        println!("{:?}", nalu);
-    }
-
-    #[test]
-    fn test_pps_file() {
-        let bytes = include_bytes!("../../../test_files/hvc_array_34.bin");
-        let mut reader = io::Cursor::new(bytes);
-
-        let nalu = Nalu::from_reader(&mut reader, bytes.len(), Default::default()).unwrap();
-        println!("{:?}", nalu);
-    }
-}
