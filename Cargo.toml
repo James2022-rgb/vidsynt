@@ -1,5 +1,7 @@
 [package]
 name = "vidsynt"
+authors = ["https://github.com/James2022-rgb"]
+license = "MIT"
 version = "0.1.1"
 edition = "2021"
 
