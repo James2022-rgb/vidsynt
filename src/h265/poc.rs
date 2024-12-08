@@ -28,26 +28,28 @@ impl Default for PocComputer {
 }
 
 impl PocComputer {
-    /// Reset for an IDR picture.
-    pub fn reset(&mut self) {
+    /// Reset for an IDR picture, or when a new CVS is started e.g. after a seek to a CRA picture.
+    pub fn reset_for_idr_or_random_access(&mut self) {
         self.is_first_picture = true;
         self.ref_pic_order_cnt_msb = 0;
         self.ref_pic_order_cnt_lsb = 0;
     }
 
+    /// Computes and returns `PicOrderCntVal`.
     pub fn compute_poc(
         &mut self,
         sps: &SequenceParameterSet,
         pps: &PictureParameterSet,
         slice_segment_header: &SliceSegmentHeader,
     ) -> i32 {
+        // All IDR pictures have PicOrderCntVal equal to 0.
         if slice_segment_header.nal_unit_type.is_idr() {
             return 0;
         }
 
         let slice_pic_order_cnt_lsb = slice_segment_header.slice_pic_order_cnt_lsb
-      .expect("Non-IDR expected. All IDR pictures have PicOrderCntVal equal to 0 since slice_pic_order_cnt_lsb is inferred to be 0 for them and prevPicOrderCntLsb and prevPicOrderCntMsb are both set equal to 0.")
-      as i32;
+            .expect("Non-IDR expected. All IDR pictures have PicOrderCntVal equal to 0 since slice_pic_order_cnt_lsb is inferred to be 0 for them and prevPicOrderCntLsb and prevPicOrderCntMsb are both set equal to 0.")
+            as i32;
 
         self.compute_poc_ex(
             sps.log2_max_pic_order_cnt_lsb_minus4,
@@ -57,6 +59,7 @@ impl PocComputer {
         )
     }
 
+    /// Computes and returns `PicOrderCntVal`.
     pub fn compute_poc_ex(
         &mut self,
         log2_max_pic_order_cnt_lsb_minus4: u8,
