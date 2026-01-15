@@ -7,11 +7,16 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+crate-type = ["rlib", "staticlib"]
+
 [features]
 default = ["serde"]
 serde = ["dep:serde"]
+ffi = ["dep:libc"]
 
 [dependencies]
 tracing = { version = "0.1", features = ["log"] }
 bitstream-io = "2.2.0"
 serde = { version = "1", features = ["derive"], optional = true }
+libc = { version = "0.2", optional = true }

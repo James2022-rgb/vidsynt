@@ -1,0 +1,13 @@
+[package]
+name = "vidsynt-sys"
+version = "0.1.0"
+edition = "2021"
+authors = ["vidsynt contributors"]
+description = "C header generation for vidsynt FFI"
+license = "MIT"
+
+[dependencies]
+vidsynt = { path = "..", features = ["ffi"] }
+
+[build-dependencies]
+cbindgen = "0.27"
