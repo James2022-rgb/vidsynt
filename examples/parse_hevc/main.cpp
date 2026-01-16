@@ -274,6 +274,34 @@ void process_mp4_file(VidsyntHevcContext* ctx, const char* filename) {
 
     for (size_t i = 0; i < result.decoder_config.sps_list.size(); i++) {
         std::cout << "\n[SPS #" << (i + 1) << "]\n";
+
+        // Parse SPS and extract it to compare resolution with container
+        const VidsyntHevcNalu* sps_nalu = nullptr;
+        VidsyntResult res = vidsynt_hevc_parse_nalu_from_bytes(
+            ctx,
+            result.decoder_config.sps_list[i].data.data(),
+            result.decoder_config.sps_list[i].data.size(),
+            &sps_nalu
+        );
+
+        if (res == VidsyntResult::Success && sps_nalu) {
+            // Get SPS to compare resolution
+            const VidsyntHevcSequenceParameterSet* sps = nullptr;
+            if (vidsynt_hevc_nalu_get_sps(ctx, sps_nalu, &sps) == VidsyntResult::Success && sps) {
+                // Check if SPS resolution matches container resolution
+                if (sps->pic_width_in_luma_samples != result.width ||
+                    sps->pic_height_in_luma_samples != result.height) {
+                    std::cout << "\n*** WARNING: Resolution mismatch! ***\n";
+                    std::cout << "  Container reports: " << result.width << "x" << result.height << "\n";
+                    std::cout << "  SPS reports: " << sps->pic_width_in_luma_samples << "x"
+                              << sps->pic_height_in_luma_samples << "\n";
+                } else {
+                    std::cout << "\n✓ Resolution matches container: " << result.width << "x" << result.height << "\n";
+                }
+            }
+        }
+
+        // Now print the full NAL unit details
         parse_and_print_nalu(ctx, result.decoder_config.sps_list[i].data.data(),
                             result.decoder_config.sps_list[i].data.size());
     }
