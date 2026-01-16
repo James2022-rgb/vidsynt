@@ -107,11 +107,11 @@ void print_nalu_type_info(VidsyntHevcNaluType nal_type) {
 
     // Print type name
     if (nal_type == VIDSYNT_HEVC_NALU_VPS_NUT) {  // VPS
-        std::cout << " (VPS)";
+        std::cout << " (VPS - Video Parameter Set)";
     } else if (nal_type == VIDSYNT_HEVC_NALU_SPS_NUT) {  // SPS
-        std::cout << " (SPS)";
+        std::cout << " (SPS - Sequence Parameter Set)";
     } else if (nal_type == VIDSYNT_HEVC_NALU_PPS_NUT) {  // PPS
-        std::cout << " (PPS)";
+        std::cout << " (PPS - Picture Parameter Set)";
     } else if (nal_type == VIDSYNT_HEVC_NALU_IDR_W_RADL) {  // IDR_W_RADL
         std::cout << " (IDR_W_RADL)";
     } else if (nal_type == VIDSYNT_HEVC_NALU_IDR_N_LP) {  // IDR_N_LP
@@ -122,15 +122,18 @@ void print_nalu_type_info(VidsyntHevcNaluType nal_type) {
 
     std::cout << "\n";
 
-    // Check properties
-    if (vidsynt_hevc_nalu_type_is_idr(nal_type)) {
-        std::cout << "  Is IDR picture\n";
-    }
-    if (vidsynt_hevc_nalu_type_is_irap(nal_type)) {
-        std::cout << "  Is IRAP picture\n";
-    }
-    if (vidsynt_hevc_nalu_type_is_reference(nal_type)) {
-        std::cout << "  Is reference picture\n";
+    // Only check picture properties for VCL (Video Coding Layer) NAL units
+    // VCL NAL units are types 0-31 (coded slice segments)
+    if (vidsynt_hevc_nalu_type_is_coded_slice_segment(nal_type)) {
+        if (vidsynt_hevc_nalu_type_is_idr(nal_type)) {
+            std::cout << "  Is IDR picture\n";
+        }
+        if (vidsynt_hevc_nalu_type_is_irap(nal_type)) {
+            std::cout << "  Is IRAP picture\n";
+        }
+        if (vidsynt_hevc_nalu_type_is_reference(nal_type)) {
+            std::cout << "  Is reference picture\n";
+        }
     }
 }
 
