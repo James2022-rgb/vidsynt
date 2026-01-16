@@ -41,7 +41,7 @@ pub unsafe extern "C" fn vidsynt_hevc_nalu_get_slice_header(
 
     // Create C-compatible slice segment header
     let c_slice_header = VidsyntHevcSliceSegmentHeader {
-        nal_unit_type: rust_slice.nal_unit_type as u8,
+        nal_unit_type: u8_to_hevc_nalu_type(rust_slice.nal_unit_type as u8),
         first_slice_segment_in_pic_flag: if rust_slice.first_slice_segment_in_pic_flag { 1 } else { 0 },
         no_output_of_prior_pics_flag: match rust_slice.no_output_of_prior_pics_flag {
             Some(true) => 1,

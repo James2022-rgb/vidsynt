@@ -5,6 +5,22 @@
 
 use std::os::raw::{c_int, c_uint};
 
+/// Convert u8 to VidsyntHevcNaluType
+///
+/// This is safe because VidsyntHevcNaluType is `#[repr(u8)]` and accepts all u8 values.
+#[inline]
+pub(crate) fn u8_to_hevc_nalu_type(value: u8) -> VidsyntHevcNaluType {
+    unsafe { std::mem::transmute(value) }
+}
+
+/// Convert VidsyntHevcNaluType to u8
+///
+/// This is safe because VidsyntHevcNaluType is `#[repr(u8)]`.
+#[inline]
+pub(crate) fn hevc_nalu_type_to_u8(nal_type: VidsyntHevcNaluType) -> u8 {
+    unsafe { std::mem::transmute(nal_type) }
+}
+
 /// Result code for FFI functions
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,7 +123,7 @@ pub enum VidsyntHevcNaluType {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct VidsyntHevcNaluHeader {
-    pub nal_unit_type: u8,
+    pub nal_unit_type: VidsyntHevcNaluType,
     pub nuh_layer_id: u8,
     pub nuh_temporal_id_plus1: u8,
     pub _reserved: u8,  // Padding for alignment
@@ -356,7 +372,7 @@ pub struct VidsyntHevcPictureParameterSet {
 #[repr(C)]
 #[derive(Debug)]
 pub struct VidsyntHevcSliceSegmentHeader {
-    pub nal_unit_type: u8,
+    pub nal_unit_type: VidsyntHevcNaluType,
     pub first_slice_segment_in_pic_flag: u8,  // bool
     /// 0xFF if not present (for non-IRAP pictures)
     pub no_output_of_prior_pics_flag: u8,

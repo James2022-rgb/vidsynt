@@ -3,7 +3,6 @@
 use super::context::VidsyntHevcContext;
 use super::types::*;
 use crate::h265::nalu::{Nalu, NaluType, NaluValueContext};
-use std::ptr;
 use std::slice;
 
 /// Parse a single NAL unit from raw bytes
@@ -74,13 +73,14 @@ pub unsafe extern "C" fn vidsynt_hevc_parse_nalu_from_bytes(
 #[no_mangle]
 pub unsafe extern "C" fn vidsynt_hevc_nalu_get_type(
     nalu: *const VidsyntHevcNalu,
-) -> u8 {
+) -> VidsyntHevcNaluType {
     if nalu.is_null() {
-        return 0xFF;
+        // Return an invalid type as sentinel
+        return u8_to_hevc_nalu_type(0xFF);
     }
 
     let nalu = &*(nalu as *const Nalu);
-    nalu.header.nal_unit_type as u8
+    u8_to_hevc_nalu_type(nalu.header.nal_unit_type as u8)
 }
 
 /// Get the NAL unit header
@@ -108,7 +108,7 @@ pub unsafe extern "C" fn vidsynt_hevc_nalu_get_header(
     let nalu = &*(nalu as *const Nalu);
 
     *out_header = VidsyntHevcNaluHeader {
-        nal_unit_type: nalu.header.nal_unit_type as u8,
+        nal_unit_type: u8_to_hevc_nalu_type(nalu.header.nal_unit_type as u8),
         nuh_layer_id: nalu.header.nuh_layer_id,
         nuh_temporal_id_plus1: nalu.header.nuh_temporal_id_plus1,
         _reserved: 0,
@@ -125,8 +125,9 @@ pub unsafe extern "C" fn vidsynt_hevc_nalu_get_header(
 /// # Returns
 /// 1 if IDR, 0 otherwise
 #[no_mangle]
-pub extern "C" fn vidsynt_hevc_nalu_type_is_idr(nal_type: u8) -> u8 {
-    let rust_type: Result<NaluType, _> = nal_type.try_into();
+pub extern "C" fn vidsynt_hevc_nalu_type_is_idr(nal_type: VidsyntHevcNaluType) -> u8 {
+    let nal_type_u8 = hevc_nalu_type_to_u8(nal_type);
+    let rust_type: Result<NaluType, _> = nal_type_u8.try_into();
     match rust_type {
         Ok(t) => if t.is_idr() { 1 } else { 0 },
         Err(_) => 0,
@@ -141,8 +142,9 @@ pub extern "C" fn vidsynt_hevc_nalu_type_is_idr(nal_type: u8) -> u8 {
 /// # Returns
 /// 1 if IRAP, 0 otherwise
 #[no_mangle]
-pub extern "C" fn vidsynt_hevc_nalu_type_is_irap(nal_type: u8) -> u8 {
-    let rust_type: Result<NaluType, _> = nal_type.try_into();
+pub extern "C" fn vidsynt_hevc_nalu_type_is_irap(nal_type: VidsyntHevcNaluType) -> u8 {
+    let nal_type_u8 = hevc_nalu_type_to_u8(nal_type);
+    let rust_type: Result<NaluType, _> = nal_type_u8.try_into();
     match rust_type {
         Ok(t) => if t.is_irap() { 1 } else { 0 },
         Err(_) => 0,
@@ -157,8 +159,9 @@ pub extern "C" fn vidsynt_hevc_nalu_type_is_irap(nal_type: u8) -> u8 {
 /// # Returns
 /// 1 if BLA, 0 otherwise
 #[no_mangle]
-pub extern "C" fn vidsynt_hevc_nalu_type_is_bla(nal_type: u8) -> u8 {
-    let rust_type: Result<NaluType, _> = nal_type.try_into();
+pub extern "C" fn vidsynt_hevc_nalu_type_is_bla(nal_type: VidsyntHevcNaluType) -> u8 {
+    let nal_type_u8 = hevc_nalu_type_to_u8(nal_type);
+    let rust_type: Result<NaluType, _> = nal_type_u8.try_into();
     match rust_type {
         Ok(t) => if t.is_bla() { 1 } else { 0 },
         Err(_) => 0,
@@ -173,8 +176,9 @@ pub extern "C" fn vidsynt_hevc_nalu_type_is_bla(nal_type: u8) -> u8 {
 /// # Returns
 /// 1 if reference picture, 0 otherwise
 #[no_mangle]
-pub extern "C" fn vidsynt_hevc_nalu_type_is_reference(nal_type: u8) -> u8 {
-    let rust_type: Result<NaluType, _> = nal_type.try_into();
+pub extern "C" fn vidsynt_hevc_nalu_type_is_reference(nal_type: VidsyntHevcNaluType) -> u8 {
+    let nal_type_u8 = hevc_nalu_type_to_u8(nal_type);
+    let rust_type: Result<NaluType, _> = nal_type_u8.try_into();
     match rust_type {
         Ok(t) => if t.is_reference() { 1 } else { 0 },
         Err(_) => 0,
@@ -189,8 +193,9 @@ pub extern "C" fn vidsynt_hevc_nalu_type_is_reference(nal_type: u8) -> u8 {
 /// # Returns
 /// 1 if RADL, 0 otherwise
 #[no_mangle]
-pub extern "C" fn vidsynt_hevc_nalu_type_is_radl(nal_type: u8) -> u8 {
-    let rust_type: Result<NaluType, _> = nal_type.try_into();
+pub extern "C" fn vidsynt_hevc_nalu_type_is_radl(nal_type: VidsyntHevcNaluType) -> u8 {
+    let nal_type_u8 = hevc_nalu_type_to_u8(nal_type);
+    let rust_type: Result<NaluType, _> = nal_type_u8.try_into();
     match rust_type {
         Ok(t) => if t.is_radl() { 1 } else { 0 },
         Err(_) => 0,
@@ -205,8 +210,9 @@ pub extern "C" fn vidsynt_hevc_nalu_type_is_radl(nal_type: u8) -> u8 {
 /// # Returns
 /// 1 if RASL, 0 otherwise
 #[no_mangle]
-pub extern "C" fn vidsynt_hevc_nalu_type_is_rasl(nal_type: u8) -> u8 {
-    let rust_type: Result<NaluType, _> = nal_type.try_into();
+pub extern "C" fn vidsynt_hevc_nalu_type_is_rasl(nal_type: VidsyntHevcNaluType) -> u8 {
+    let nal_type_u8 = hevc_nalu_type_to_u8(nal_type);
+    let rust_type: Result<NaluType, _> = nal_type_u8.try_into();
     match rust_type {
         Ok(t) => if t.is_rasl() { 1 } else { 0 },
         Err(_) => 0,
@@ -221,8 +227,9 @@ pub extern "C" fn vidsynt_hevc_nalu_type_is_rasl(nal_type: u8) -> u8 {
 /// # Returns
 /// 1 if coded slice segment, 0 otherwise
 #[no_mangle]
-pub extern "C" fn vidsynt_hevc_nalu_type_is_coded_slice_segment(nal_type: u8) -> u8 {
-    let rust_type: Result<NaluType, _> = nal_type.try_into();
+pub extern "C" fn vidsynt_hevc_nalu_type_is_coded_slice_segment(nal_type: VidsyntHevcNaluType) -> u8 {
+    let nal_type_u8 = hevc_nalu_type_to_u8(nal_type);
+    let rust_type: Result<NaluType, _> = nal_type_u8.try_into();
     match rust_type {
         Ok(t) => if t.is_coded_slice_segment() { 1 } else { 0 },
         Err(_) => 0,
@@ -236,16 +243,18 @@ mod tests {
 
     #[test]
     fn test_nalu_type_queries() {
-        let idr_type = 19u8; // IDR_W_RADL
+        use VidsyntHevcNaluType::*;
+
+        let idr_type = VIDSYNT_HEVC_NALU_IDR_W_RADL;
         assert_eq!(vidsynt_hevc_nalu_type_is_idr(idr_type), 1);
         assert_eq!(vidsynt_hevc_nalu_type_is_irap(idr_type), 1);
         assert_eq!(vidsynt_hevc_nalu_type_is_reference(idr_type), 1);
 
-        let trail_n_type = 0u8; // TRAIL_N
+        let trail_n_type = VIDSYNT_HEVC_NALU_TRAIL_N;
         assert_eq!(vidsynt_hevc_nalu_type_is_idr(trail_n_type), 0);
         assert_eq!(vidsynt_hevc_nalu_type_is_reference(trail_n_type), 0);
 
-        let sps_type = 33u8; // SPS_NUT
+        let sps_type = VIDSYNT_HEVC_NALU_SPS_NUT;
         assert_eq!(vidsynt_hevc_nalu_type_is_coded_slice_segment(sps_type), 0);
     }
 }

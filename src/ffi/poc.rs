@@ -69,8 +69,9 @@ pub unsafe extern "C" fn vidsynt_hevc_poc_compute(
     let pps = &*pps;
     let slice_header = &*slice_header;
 
-    // Convert NAL unit type (slice_header.nal_unit_type is u8)
-    let nal_type: NaluType = match slice_header.nal_unit_type.try_into() {
+    // Convert NAL unit type (slice_header.nal_unit_type is VidsyntHevcNaluType)
+    let nal_type_u8 = hevc_nalu_type_to_u8(slice_header.nal_unit_type);
+    let nal_type: NaluType = match nal_type_u8.try_into() {
         Ok(t) => t,
         Err(_) => return VidsyntResult::InvalidNaluType,
     };

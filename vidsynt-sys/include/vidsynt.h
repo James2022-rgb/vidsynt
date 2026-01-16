@@ -308,7 +308,7 @@ typedef struct VidsyntHevcNalu {
 
 // HEVC NAL unit header
 typedef struct VidsyntHevcNaluHeader {
-    uint8_t nal_unit_type;
+    VidsyntHevcNaluType nal_unit_type;
     uint8_t nuh_layer_id;
     uint8_t nuh_temporal_id_plus1;
     uint8_t _reserved;
@@ -341,7 +341,7 @@ typedef struct VidsyntHevcVideoParameterSet {
 
 // Slice segment header
 typedef struct VidsyntHevcSliceSegmentHeader {
-    uint8_t nal_unit_type;
+    VidsyntHevcNaluType nal_unit_type;
     uint8_t first_slice_segment_in_pic_flag;
     // 0xFF if not present (for non-IRAP pictures)
     uint8_t no_output_of_prior_pics_flag;
@@ -461,7 +461,7 @@ enum VidsyntResult vidsynt_hevc_parse_nalu_from_bytes(struct VidsyntHevcContext 
 //
 // # Safety
 // - `nalu` must be a valid pointer from `vidsynt_hevc_parse_nalu_from_bytes`
-uint8_t vidsynt_hevc_nalu_get_type(const struct VidsyntHevcNalu *nalu);
+VidsyntHevcNaluType vidsynt_hevc_nalu_get_type(const struct VidsyntHevcNalu *nalu);
 
 // Get the NAL unit header
 //
@@ -486,7 +486,7 @@ enum VidsyntResult vidsynt_hevc_nalu_get_header(const struct VidsyntHevcNalu *na
 //
 // # Returns
 // 1 if IDR, 0 otherwise
-uint8_t vidsynt_hevc_nalu_type_is_idr(uint8_t nal_type);
+uint8_t vidsynt_hevc_nalu_type_is_idr(VidsyntHevcNaluType nal_type);
 
 // Check if a NAL unit type is an IRAP (Intra Random Access Point) picture
 //
@@ -495,7 +495,7 @@ uint8_t vidsynt_hevc_nalu_type_is_idr(uint8_t nal_type);
 //
 // # Returns
 // 1 if IRAP, 0 otherwise
-uint8_t vidsynt_hevc_nalu_type_is_irap(uint8_t nal_type);
+uint8_t vidsynt_hevc_nalu_type_is_irap(VidsyntHevcNaluType nal_type);
 
 // Check if a NAL unit type is a BLA (Broken Link Access) picture
 //
@@ -504,7 +504,7 @@ uint8_t vidsynt_hevc_nalu_type_is_irap(uint8_t nal_type);
 //
 // # Returns
 // 1 if BLA, 0 otherwise
-uint8_t vidsynt_hevc_nalu_type_is_bla(uint8_t nal_type);
+uint8_t vidsynt_hevc_nalu_type_is_bla(VidsyntHevcNaluType nal_type);
 
 // Check if a NAL unit type is a reference picture
 //
@@ -513,7 +513,7 @@ uint8_t vidsynt_hevc_nalu_type_is_bla(uint8_t nal_type);
 //
 // # Returns
 // 1 if reference picture, 0 otherwise
-uint8_t vidsynt_hevc_nalu_type_is_reference(uint8_t nal_type);
+uint8_t vidsynt_hevc_nalu_type_is_reference(VidsyntHevcNaluType nal_type);
 
 // Check if a NAL unit type is a RADL (Random Access Decodable Leading) picture
 //
@@ -522,7 +522,7 @@ uint8_t vidsynt_hevc_nalu_type_is_reference(uint8_t nal_type);
 //
 // # Returns
 // 1 if RADL, 0 otherwise
-uint8_t vidsynt_hevc_nalu_type_is_radl(uint8_t nal_type);
+uint8_t vidsynt_hevc_nalu_type_is_radl(VidsyntHevcNaluType nal_type);
 
 // Check if a NAL unit type is a RASL (Random Access Skipped Leading) picture
 //
@@ -531,7 +531,7 @@ uint8_t vidsynt_hevc_nalu_type_is_radl(uint8_t nal_type);
 //
 // # Returns
 // 1 if RASL, 0 otherwise
-uint8_t vidsynt_hevc_nalu_type_is_rasl(uint8_t nal_type);
+uint8_t vidsynt_hevc_nalu_type_is_rasl(VidsyntHevcNaluType nal_type);
 
 // Check if a NAL unit type is a coded slice segment
 //
@@ -540,7 +540,7 @@ uint8_t vidsynt_hevc_nalu_type_is_rasl(uint8_t nal_type);
 //
 // # Returns
 // 1 if coded slice segment, 0 otherwise
-uint8_t vidsynt_hevc_nalu_type_is_coded_slice_segment(uint8_t nal_type);
+uint8_t vidsynt_hevc_nalu_type_is_coded_slice_segment(VidsyntHevcNaluType nal_type);
 
 // Get the VPS from a parsed NAL unit
 //

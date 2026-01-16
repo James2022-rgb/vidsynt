@@ -102,7 +102,7 @@ private:
     VidsyntHevcContext* ctx_;
 };
 
-void print_nalu_type_info(uint8_t nal_type) {
+void print_nalu_type_info(VidsyntHevcNaluType nal_type) {
     std::cout << "  NAL unit type: " << static_cast<int>(nal_type);
 
     // Print type name
@@ -146,7 +146,7 @@ void parse_and_print_nalu(VidsyntHevcContext* ctx, const uint8_t* data, size_t l
     std::cout << "\nSuccessfully parsed NAL unit\n";
 
     // Get NAL unit type
-    uint8_t nal_type = vidsynt_hevc_nalu_get_type(nalu);
+    VidsyntHevcNaluType nal_type = vidsynt_hevc_nalu_get_type(nalu);
     print_nalu_type_info(nal_type);
 
     // Try to extract parameter sets
