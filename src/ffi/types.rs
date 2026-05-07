@@ -256,10 +256,49 @@ pub struct VidsyntHevcVideoParameterSet {
     pub timing_info: *const VidsyntHevcTimingInfo,
 }
 
-/// Short-term reference picture set
+/// Flags for short-term reference picture set
+///
+/// Mirrors the bits of Vulkan Video's `StdVideoH265ShortTermRefPicSetFlags`,
+/// but exposed as separate `u8` booleans instead of a packed `uint32_t` bitfield.
 #[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct VidsyntHevcShortTermRefPicSetFlags {
+    pub inter_ref_pic_set_prediction_flag: u8,  // bool
+    pub delta_rps_sign: u8,  // bool
+}
+
+/// Short-term reference picture set
+///
+/// Carries the same fields as Vulkan Video's `StdVideoH265ShortTermRefPicSet`
+/// for direct field-by-field copy when populating decode parameters. The byte
+/// layout differs (no `reserved*` padding fields, packed flag bytes), so use
+/// per-field assignment rather than `memcpy`.
+///
+/// `delta_idx_minus1`, `use_delta_flag`, `abs_delta_rps_minus1`, and
+/// `used_by_curr_pic_flag` are only meaningful when
+/// `flags.inter_ref_pic_set_prediction_flag` is set; they are zero otherwise.
+/// `num_negative_pics`/`num_positive_pics` and the `delta_poc_s{0,1}_minus1`
+/// arrays are populated when `inter_ref_pic_set_prediction_flag` is unset.
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct VidsyntHevcShortTermRefPicSet {
-    _private: [u8; 0],
+    pub flags: VidsyntHevcShortTermRefPicSetFlags,
+    pub delta_idx_minus1: u32,
+    /// Bitmask of `use_delta_flag[j]` values for j in 0..NumDeltaPocs[RefRpsIdx]
+    pub use_delta_flag: u16,
+    pub abs_delta_rps_minus1: u16,
+    /// Bitmask of `used_by_curr_pic_flag[j]` values
+    pub used_by_curr_pic_flag: u16,
+    /// Bitmask of `used_by_curr_pic_s0_flag[i]` values for i in 0..num_negative_pics
+    pub used_by_curr_pic_s0_flag: u16,
+    /// Bitmask of `used_by_curr_pic_s1_flag[i]` values for i in 0..num_positive_pics
+    pub used_by_curr_pic_s1_flag: u16,
+    pub num_negative_pics: u8,
+    pub num_positive_pics: u8,
+    /// Indexed by i in 0..num_negative_pics; entries beyond are zero.
+    pub delta_poc_s0_minus1: [u16; 16],
+    /// Indexed by i in 0..num_positive_pics; entries beyond are zero.
+    pub delta_poc_s1_minus1: [u16; 16],
 }
 
 /// Sequence Parameter Set

@@ -58,6 +58,7 @@ pub struct VidsyntHevcContext {
     pub(crate) ffi_timing_infos: Vec<Box<VidsyntHevcTimingInfo>>,
     pub(crate) ffi_tiles: Vec<Box<VidsyntHevcTiles>>,
     pub(crate) ffi_deblocking_filter_controls: Vec<Box<VidsyntHevcDeblockingFilterControl>>,
+    pub(crate) ffi_short_term_ref_pic_sets: Vec<Box<[VidsyntHevcShortTermRefPicSet]>>,
 
     /// Buffers for format conversion results
     pub(crate) conversion_buffers: Vec<Vec<u8>>,
@@ -109,6 +110,7 @@ impl VidsyntHevcContext {
             ffi_timing_infos: Vec::new(),
             ffi_tiles: Vec::new(),
             ffi_deblocking_filter_controls: Vec::new(),
+            ffi_short_term_ref_pic_sets: Vec::new(),
             conversion_buffers: Vec::new(),
         }
     }

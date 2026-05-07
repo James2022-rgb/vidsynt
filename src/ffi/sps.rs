@@ -11,6 +11,10 @@ use crate::h265::sps::VideoSignalType as RustVideoSignalType;
 use crate::h265::sps::ColourDescription as RustColourDescription;
 use crate::h265::sps::ChromaLocInfo as RustChromaLocInfo;
 use crate::h265::sps::VuiTimingInfo as RustVuiTimingInfo;
+use crate::h265::rps::{
+    ShortTermReferencePictureSet as RustShortTermReferencePictureSet,
+    ShortTermReferencePictureSetValue as RustShortTermReferencePictureSetValue,
+};
 use std::ptr;
 
 /// Get the SPS from a parsed NAL unit
@@ -82,6 +86,23 @@ pub unsafe extern "C" fn vidsynt_hevc_nalu_get_sps(
         ptr::null()
     };
 
+    // Convert short-term reference picture sets
+    let (short_term_ref_pic_sets_ptr, short_term_ref_pic_set_count) =
+        if rust_sps.short_term_ref_pic_sets.is_empty() {
+            (ptr::null(), 0)
+        } else {
+            let converted: Box<[VidsyntHevcShortTermRefPicSet]> = rust_sps
+                .short_term_ref_pic_sets
+                .iter()
+                .map(convert_short_term_ref_pic_set)
+                .collect::<Vec<_>>()
+                .into_boxed_slice();
+            let count = converted.len();
+            ctx.ffi_short_term_ref_pic_sets.push(converted);
+            let ptr = ctx.ffi_short_term_ref_pic_sets.last().unwrap().as_ptr();
+            (ptr, count)
+        };
+
     // Create C-compatible SPS
     let c_sps = VidsyntHevcSequenceParameterSet {
         sps_video_parameter_set_id: rust_sps.sps_video_parameter_set_id,
@@ -118,9 +139,8 @@ pub unsafe extern "C" fn vidsynt_hevc_nalu_get_sps(
         conformance_window: conformance_window_ptr,
         sub_layer_ordering_info: sub_layer_ordering_info_ptr,
         vui: vui_ptr,
-        // TODO: Implement full short-term reference picture set conversion
-        short_term_ref_pic_sets: ptr::null(),
-        short_term_ref_pic_set_count: 0,
+        short_term_ref_pic_sets: short_term_ref_pic_sets_ptr,
+        short_term_ref_pic_set_count,
     };
 
     // Cache the Rust SPS for later activation
@@ -292,4 +312,61 @@ unsafe fn convert_vui(ctx: &mut VidsyntHevcContext, rust_vui: &RustVui) -> *cons
 
     ctx.ffi_vuis.push(Box::new(converted_vui));
     ctx.ffi_vuis.last().unwrap().as_ref() as *const _
+}
+
+/// Convert a Rust short-term reference picture set to its C-ABI form.
+fn convert_short_term_ref_pic_set(
+    rps: &RustShortTermReferencePictureSet,
+) -> VidsyntHevcShortTermRefPicSet {
+    let inter_pred = rps.inter_ref_pic_set_prediction_flag.unwrap_or(false);
+
+    match &rps.value {
+        RustShortTermReferencePictureSetValue::InterRefPicSetPrediction(p) => {
+            VidsyntHevcShortTermRefPicSet {
+                flags: VidsyntHevcShortTermRefPicSetFlags {
+                    inter_ref_pic_set_prediction_flag: if inter_pred { 1 } else { 0 },
+                    delta_rps_sign: p.delta_rps_sign as u8,
+                },
+                delta_idx_minus1: p.delta_idx_minus1.unwrap_or(0),
+                use_delta_flag: if p.use_delta_flag { 1 } else { 0 },
+                abs_delta_rps_minus1: p.abs_delta_rps_minus1,
+                used_by_curr_pic_flag: if p.used_by_curr_pic_flag { 1 } else { 0 },
+                used_by_curr_pic_s0_flag: 0,
+                used_by_curr_pic_s1_flag: 0,
+                num_negative_pics: 0,
+                num_positive_pics: 0,
+                delta_poc_s0_minus1: [0; 16],
+                delta_poc_s1_minus1: [0; 16],
+            }
+        }
+        RustShortTermReferencePictureSetValue::NonInterRefPicSetPrediction(p) => {
+            let used_s0 = p
+                .used_by_curr_pic_s0_flag
+                .iter()
+                .enumerate()
+                .fold(0u16, |acc, (i, &b)| acc | ((b as u16) << i));
+            let used_s1 = p
+                .used_by_curr_pic_s1_flag
+                .iter()
+                .enumerate()
+                .fold(0u16, |acc, (i, &b)| acc | ((b as u16) << i));
+
+            VidsyntHevcShortTermRefPicSet {
+                flags: VidsyntHevcShortTermRefPicSetFlags {
+                    inter_ref_pic_set_prediction_flag: if inter_pred { 1 } else { 0 },
+                    delta_rps_sign: 0,
+                },
+                delta_idx_minus1: 0,
+                use_delta_flag: 0,
+                abs_delta_rps_minus1: 0,
+                used_by_curr_pic_flag: 0,
+                used_by_curr_pic_s0_flag: used_s0,
+                used_by_curr_pic_s1_flag: used_s1,
+                num_negative_pics: p.num_negative_pics,
+                num_positive_pics: p.num_positive_pics,
+                delta_poc_s0_minus1: p.delta_poc_s0_minus1,
+                delta_poc_s1_minus1: p.delta_poc_s1_minus1,
+            }
+        }
+    }
 }

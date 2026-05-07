@@ -207,6 +207,7 @@ pub fn parse_length_prefixed_and_convert_to_annex_b(
     )
 }
 
+// TODO: Take `NaluRef`s instead of `Nalu`s ?
 /// Returns a tuple of slice segment start code offsets and the converted _Annex B_ byte stream.
 pub fn convert_length_prefixed_to_annex_b<'a>(
     length_prefixed_byte_stream: &[u8],

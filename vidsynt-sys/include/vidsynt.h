@@ -199,9 +199,45 @@ typedef struct VidsyntHevcVui {
     const struct VidsyntHevcVuiTimingInfo *vui_timing_info;
 } VidsyntHevcVui;
 
+// Flags for short-term reference picture set
+//
+// Mirrors the bits of Vulkan Video's `StdVideoH265ShortTermRefPicSetFlags`,
+// but exposed as separate `u8` booleans instead of a packed `uint32_t` bitfield.
+typedef struct VidsyntHevcShortTermRefPicSetFlags {
+    uint8_t inter_ref_pic_set_prediction_flag;
+    uint8_t delta_rps_sign;
+} VidsyntHevcShortTermRefPicSetFlags;
+
 // Short-term reference picture set
+//
+// Carries the same fields as Vulkan Video's `StdVideoH265ShortTermRefPicSet`
+// for direct field-by-field copy when populating decode parameters. The byte
+// layout differs (no `reserved*` padding fields, packed flag bytes), so use
+// per-field assignment rather than `memcpy`.
+//
+// `delta_idx_minus1`, `use_delta_flag`, `abs_delta_rps_minus1`, and
+// `used_by_curr_pic_flag` are only meaningful when
+// `flags.inter_ref_pic_set_prediction_flag` is set; they are zero otherwise.
+// `num_negative_pics`/`num_positive_pics` and the `delta_poc_s{0,1}_minus1`
+// arrays are populated when `inter_ref_pic_set_prediction_flag` is unset.
 typedef struct VidsyntHevcShortTermRefPicSet {
-    uint8_t _private[0];
+    struct VidsyntHevcShortTermRefPicSetFlags flags;
+    uint32_t delta_idx_minus1;
+    // Bitmask of `use_delta_flag[j]` values for j in 0..NumDeltaPocs[RefRpsIdx]
+    uint16_t use_delta_flag;
+    uint16_t abs_delta_rps_minus1;
+    // Bitmask of `used_by_curr_pic_flag[j]` values
+    uint16_t used_by_curr_pic_flag;
+    // Bitmask of `used_by_curr_pic_s0_flag[i]` values for i in 0..num_negative_pics
+    uint16_t used_by_curr_pic_s0_flag;
+    // Bitmask of `used_by_curr_pic_s1_flag[i]` values for i in 0..num_positive_pics
+    uint16_t used_by_curr_pic_s1_flag;
+    uint8_t num_negative_pics;
+    uint8_t num_positive_pics;
+    // Indexed by i in 0..num_negative_pics; entries beyond are zero.
+    uint16_t delta_poc_s0_minus1[16];
+    // Indexed by i in 0..num_positive_pics; entries beyond are zero.
+    uint16_t delta_poc_s1_minus1[16];
 } VidsyntHevcShortTermRefPicSet;
 
 // Sequence Parameter Set
