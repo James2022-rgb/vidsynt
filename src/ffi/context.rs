@@ -150,6 +150,10 @@ pub unsafe extern "C" fn vidsynt_hevc_context_free(ctx: *mut VidsyntHevcContext)
 /// This SPS will be used to provide context when parsing slice segments.
 /// You must set an active SPS before parsing VCL NAL units (coded slices).
 ///
+/// The SPS is looked up by `sps_seq_parameter_set_id` in the cache populated
+/// by `vidsynt_hevc_parse_nalu_from_bytes`. Returns
+/// `VIDSYNT_ERROR_DATA_NOT_AVAILABLE` if no SPS with this id has been parsed.
+///
 /// # Parameters
 /// - `ctx`: Context to update
 /// - `sps`: SPS to set as active (from `vidsynt_hevc_nalu_get_sps`)
@@ -157,6 +161,7 @@ pub unsafe extern "C" fn vidsynt_hevc_context_free(ctx: *mut VidsyntHevcContext)
 /// # Returns
 /// - `VIDSYNT_SUCCESS` on success
 /// - `VIDSYNT_ERROR_INVALID_PARAMETER` if any pointer is null
+/// - `VIDSYNT_ERROR_DATA_NOT_AVAILABLE` if the SPS id has not been parsed
 ///
 /// # Safety
 /// - `ctx` must be a valid context pointer
@@ -191,6 +196,10 @@ pub unsafe extern "C" fn vidsynt_hevc_context_set_active_sps(
 /// This PPS will be used to provide context when parsing slice segments.
 /// You must set an active PPS before parsing VCL NAL units (coded slices).
 ///
+/// The PPS is looked up by `pps_pic_parameter_set_id` in the cache populated
+/// by `vidsynt_hevc_parse_nalu_from_bytes`. Returns
+/// `VIDSYNT_ERROR_DATA_NOT_AVAILABLE` if no PPS with this id has been parsed.
+///
 /// # Parameters
 /// - `ctx`: Context to update
 /// - `pps`: PPS to set as active (from `vidsynt_hevc_nalu_get_pps`)
@@ -198,6 +207,7 @@ pub unsafe extern "C" fn vidsynt_hevc_context_set_active_sps(
 /// # Returns
 /// - `VIDSYNT_SUCCESS` on success
 /// - `VIDSYNT_ERROR_INVALID_PARAMETER` if any pointer is null
+/// - `VIDSYNT_ERROR_DATA_NOT_AVAILABLE` if the PPS id has not been parsed
 ///
 /// # Safety
 /// - `ctx` must be a valid context pointer

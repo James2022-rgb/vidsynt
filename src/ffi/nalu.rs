@@ -2,7 +2,7 @@
 
 use super::context::VidsyntHevcContext;
 use super::types::*;
-use crate::h265::nalu::{Nalu, NaluType, NaluValueContext};
+use crate::h265::nalu::{Nalu, NaluType, NaluValue, NaluValueContext};
 use std::slice;
 
 /// Parse a single NAL unit from raw bytes
@@ -49,6 +49,20 @@ pub unsafe extern "C" fn vidsynt_hevc_parse_nalu_from_bytes(
         Ok(nalu) => nalu,
         Err(_) => return VidsyntResult::ParseFailed,
     };
+
+    // Cache parameter sets so they can later be referenced by id
+    // (e.g. via `vidsynt_hevc_context_set_active_sps`/`..._set_active_pps`).
+    match &nalu.value {
+        NaluValue::SpsNut(sps) => {
+            ctx.sps_cache
+                .insert(sps.sps_seq_parameter_set_id, Box::new(sps.clone()));
+        }
+        NaluValue::PpsNut(pps) => {
+            ctx.pps_cache
+                .insert(pps.pps_pic_parameter_set_id, Box::new(pps.clone()));
+        }
+        _ => {}
+    }
 
     // Store the parsed NAL unit in context
     ctx.nalus.push(Box::new(nalu));

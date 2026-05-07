@@ -143,10 +143,6 @@ pub unsafe extern "C" fn vidsynt_hevc_nalu_get_sps(
         short_term_ref_pic_set_count,
     };
 
-    // Cache the Rust SPS for later activation
-    let sps_id = rust_sps.sps_seq_parameter_set_id;
-    ctx.sps_cache.insert(sps_id, Box::new(rust_sps.clone()));
-
     // Store in context and return pointer
     ctx.ffi_sps.push(Box::new(c_sps));
     *out_sps = ctx.ffi_sps.last().unwrap().as_ref() as *const _;

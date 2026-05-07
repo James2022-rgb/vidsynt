@@ -94,10 +94,6 @@ pub unsafe extern "C" fn vidsynt_hevc_nalu_get_pps(
         deblocking_filter_control: deblocking_filter_control_ptr,
     };
 
-    // Cache the Rust PPS for later activation
-    let pps_id = rust_pps.pps_pic_parameter_set_id;
-    ctx.pps_cache.insert(pps_id, Box::new(rust_pps.clone()));
-
     // Store in context and return pointer
     ctx.ffi_pps.push(Box::new(c_pps));
     *out_pps = ctx.ffi_pps.last().unwrap().as_ref() as *const _;
