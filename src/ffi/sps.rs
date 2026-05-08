@@ -311,7 +311,7 @@ unsafe fn convert_vui(ctx: &mut VidsyntHevcContext, rust_vui: &RustVui) -> *cons
 }
 
 /// Convert a Rust short-term reference picture set to its C-ABI form.
-fn convert_short_term_ref_pic_set(
+pub(crate) fn convert_short_term_ref_pic_set(
     rps: &RustShortTermReferencePictureSet,
 ) -> VidsyntHevcShortTermRefPicSet {
     let inter_pred = rps.inter_ref_pic_set_prediction_flag.unwrap_or(false);

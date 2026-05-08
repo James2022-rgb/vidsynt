@@ -422,10 +422,22 @@ pub struct VidsyntHevcSliceSegmentHeader {
     pub slice_segment_address: u32,
     /// Valid only for non-IDR slices, 0xFFFF otherwise
     pub slice_pic_order_cnt_lsb: u16,
+    /// 1 if the current picture's RPS is taken from the SPS (indexed by
+    /// `short_term_ref_pic_set_idx`); 0 if it is parsed inline from the
+    /// slice header (`short_term_ref_pic_set` is then populated and
+    /// `short_term_ref_pic_set_idx == 0xFF`); 0xFF for IDR slices.
+    pub short_term_ref_pic_set_sps_flag: u8,
     /// Index of the short-term reference picture set in the SPS, 0xFF if not from SPS
     pub short_term_ref_pic_set_idx: u8,
     /// Current RPS index
     pub curr_rps_idx: u8,
+    /// Inline short-term reference picture set, valid only when
+    /// `short_term_ref_pic_set_sps_flag == 0` AND non-IDR. Zeroed
+    /// otherwise.
+    pub short_term_ref_pic_set: VidsyntHevcShortTermRefPicSet,
+    /// Number of bits the inline `short_term_ref_pic_set` consumed in
+    /// the slice header. 0 when the inline path was not taken.
+    pub num_bits_for_st_ref_pic_set_in_slice: u16,
 }
 
 /// POC (Picture Order Count) Computer

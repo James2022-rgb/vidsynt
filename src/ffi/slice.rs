@@ -1,6 +1,7 @@
 //! Slice segment header accessor functions
 
 use super::context::VidsyntHevcContext;
+use super::sps::convert_short_term_ref_pic_set;
 use super::types::*;
 use crate::h265::nalu::{Nalu, NaluValue};
 
@@ -39,6 +40,29 @@ pub unsafe extern "C" fn vidsynt_hevc_nalu_get_slice_header(
         _ => return VidsyntResult::DataNotAvailable,
     };
 
+    // Inline RPS (only present when short_term_ref_pic_set_sps_flag == 0
+    // for non-IDR slices). Convert via the SPS-side helper so the byte
+    // layout matches the SPS-table entries.
+    let inline_rps_c = match rust_slice.short_term_ref_pic_set.as_ref() {
+        Some(rps) => convert_short_term_ref_pic_set(rps),
+        None => VidsyntHevcShortTermRefPicSet {
+            flags: VidsyntHevcShortTermRefPicSetFlags {
+                inter_ref_pic_set_prediction_flag: 0,
+                delta_rps_sign: 0,
+            },
+            delta_idx_minus1: 0,
+            use_delta_flag: 0,
+            abs_delta_rps_minus1: 0,
+            used_by_curr_pic_flag: 0,
+            used_by_curr_pic_s0_flag: 0,
+            used_by_curr_pic_s1_flag: 0,
+            num_negative_pics: 0,
+            num_positive_pics: 0,
+            delta_poc_s0_minus1: [0; 16],
+            delta_poc_s1_minus1: [0; 16],
+        },
+    };
+
     // Create C-compatible slice segment header
     let c_slice_header = VidsyntHevcSliceSegmentHeader {
         nal_unit_type: u8_to_hevc_nalu_type(rust_slice.nal_unit_type as u8),
@@ -56,8 +80,16 @@ pub unsafe extern "C" fn vidsynt_hevc_nalu_get_slice_header(
         },
         slice_segment_address: rust_slice.slice_segment_address.unwrap_or(0),
         slice_pic_order_cnt_lsb: rust_slice.slice_pic_order_cnt_lsb.unwrap_or(0xFFFF),
+        short_term_ref_pic_set_sps_flag: match rust_slice.short_term_ref_pic_set_sps_flag {
+            Some(true)  => 1,
+            Some(false) => 0,
+            None        => 0xFF,
+        },
         short_term_ref_pic_set_idx: rust_slice.short_term_ref_pic_set_idx.unwrap_or(0xFF),
         curr_rps_idx: rust_slice.curr_rps_idx,
+        short_term_ref_pic_set: inline_rps_c,
+        num_bits_for_st_ref_pic_set_in_slice:
+            rust_slice.short_term_ref_pic_set_size.unwrap_or(0),
     };
 
     // Store in context and return pointer

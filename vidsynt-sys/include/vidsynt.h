@@ -388,10 +388,24 @@ typedef struct VidsyntHevcSliceSegmentHeader {
     uint32_t slice_segment_address;
     // Valid only for non-IDR slices, 0xFFFF otherwise
     uint16_t slice_pic_order_cnt_lsb;
+    // 1 if the current picture's RPS is taken from the SPS (indexed by
+    // `short_term_ref_pic_set_idx`); 0 if it is parsed inline from the
+    // slice header (in which case `short_term_ref_pic_set` is populated
+    // and `short_term_ref_pic_set_idx == 0xFF`); 0xFF for IDR slices
+    // (which carry no RPS at all).
+    uint8_t short_term_ref_pic_set_sps_flag;
     // Index of the short-term reference picture set in the SPS, 0xFF if not from SPS
     uint8_t short_term_ref_pic_set_idx;
     // Current RPS index
     uint8_t curr_rps_idx;
+    // Inline short-term reference picture set, valid only when
+    // `short_term_ref_pic_set_sps_flag == 0` AND the slice is non-IDR.
+    // Zeroed otherwise.
+    struct VidsyntHevcShortTermRefPicSet short_term_ref_pic_set;
+    // Number of bits the inline `short_term_ref_pic_set` consumed in the
+    // slice header. 0 when the inline path was not taken. Equivalent to
+    // Vulkan Video's `StdVideoDecodeH265PictureInfo::NumBitsForSTRefPicSetInSlice`.
+    uint16_t num_bits_for_st_ref_pic_set_in_slice;
 } VidsyntHevcSliceSegmentHeader;
 
 // POC (Picture Order Count) Computer
