@@ -463,7 +463,24 @@ impl Vui {
 
         let bitstream_restriction_flag = bit_reader.read_bit()?;
         let bitstream_restriction: Option<BitstreamRestriction> = if bitstream_restriction_flag {
-            todo!("bitstream_restriction_flag == true not supported");
+            let tiles_fixed_structure_flag             = bit_reader.read_bit()?;
+            let motion_vectors_over_pic_boundaries_flag = bit_reader.read_bit()?;
+            let restricted_ref_pic_lists_flag          = bit_reader.read_bit()?;
+            let min_spatial_segmentation_idc:    u16   = read_exp_golomb_ue(bit_reader)? as _;
+            let max_bytes_per_pic_denom:         u8    = read_exp_golomb_ue(bit_reader)? as _;
+            let max_bits_per_min_cu_denom:       u8    = read_exp_golomb_ue(bit_reader)? as _;
+            let log2_max_mv_length_horizontal:   u8    = read_exp_golomb_ue(bit_reader)? as _;
+            let log2_max_mv_length_vertical:     u8    = read_exp_golomb_ue(bit_reader)? as _;
+            Some(BitstreamRestriction {
+                tiles_fixed_structure_flag,
+                motion_vectors_over_pic_boundaries_flag,
+                restricted_ref_pic_lists_flag,
+                min_spatial_segmentation_idc,
+                max_bytes_per_pic_denom,
+                max_bits_per_min_cu_denom,
+                log2_max_mv_length_horizontal,
+                log2_max_mv_length_vertical,
+            })
         } else {
             None
         };
