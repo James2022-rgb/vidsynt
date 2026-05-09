@@ -287,10 +287,25 @@ typedef struct VidsyntHevcTiles {
     uint8_t num_tile_rows_minus1;
     uint8_t uniform_spacing_flag;
     uint8_t loop_filter_across_tiles_enabled_flag;
+    // Per-column widths in CTBs, each minus 1. Valid for the first
+    // num_tile_columns_minus1 entries; rest are 0. All-zero when
+    // uniform_spacing_flag != 0. Sized to the std H.265 max (19) to
+    // match StdVideoH265PictureParameterSet.
+    uint16_t column_width_minus1[19];
+    // Per-row heights in CTBs, each minus 1. Same semantics as
+    // column_width_minus1 but for rows. Max 21 entries per std H.265.
+    uint16_t row_height_minus1[21];
 } VidsyntHevcTiles;
 
 // Deblocking filter control
 typedef struct VidsyntHevcDeblockingFilterControl {
+    // When true, slice headers MAY override the PPS deblocking parameters
+    // via their own deblocking_filter_override_flag. Carries no
+    // additional syntax in the PPS itself, but consumers MUST forward
+    // this flag when reconstructing a StdVideoH265PictureParameterSet
+    // for hardware video decode -- otherwise the driver will mis-parse
+    // the slice headers.
+    uint8_t deblocking_filter_override_enabled_flag;
     uint8_t pps_deblocking_filter_disabled_flag;
     // Only valid if pps_deblocking_filter_disabled_flag is false, otherwise ignored
     int8_t pps_beta_offset_div2;

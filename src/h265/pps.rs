@@ -52,10 +52,24 @@ pub struct Tiles {
     pub num_tile_rows_minus1: u8,
     pub uniform_spacing_flag: bool,
     pub loop_filter_across_tiles_enabled_flag: bool,
+    /// Per-column widths in CTBs, each minus 1. Valid count is
+    /// `num_tile_columns_minus1` entries (the last column's width is
+    /// implicit). Only meaningful when `uniform_spacing_flag` is false;
+    /// otherwise all entries are 0 and the driver derives widths from
+    /// `PicWidthInCtbsY / num_tile_columns`. Sized to the std H.265
+    /// max (19) to match `StdVideoH265PictureParameterSet`.
+    pub column_width_minus1: [u16; 19],
+    /// Per-row heights in CTBs, each minus 1. Same semantics as above
+    /// but for rows; max 21 entries per std H.265.
+    pub row_height_minus1: [u16; 21],
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DeblockingFilterControl {
+    /// When true, slice headers MAY override the PPS deblocking parameters
+    /// via their own `deblocking_filter_override_flag`. This flag carries
+    /// no additional syntax in the PPS itself.
+    pub deblocking_filter_override_enabled_flag: bool,
     /// Specifies that the deblocking filter is disabled for pictures referring to the PPS unless overriden by information present in the slice header.
     pub pps_deblocking_filter_disabled_flag: bool,
     /// Specifies the default deblocking parameter offset for β that is applied for slices referring to the PPS, unless overriden by information present in the slice header.
@@ -68,6 +82,11 @@ pub struct DeblockingFilterControl {
     pub pps_tc_offset_div2: Option<i8>,
 }
 
+// Spec maxima per ITU-T H.265 Table A.7 / A.8 (and matching the
+// std H.265 sizes used by Vulkan video).
+const MAX_TILE_COLUMNS: usize = 19;
+const MAX_TILE_ROWS: usize    = 21;
+
 impl Default for Tiles {
     fn default() -> Self {
         Self {
@@ -75,6 +94,8 @@ impl Default for Tiles {
             num_tile_rows_minus1: 0,
             uniform_spacing_flag: true,
             loop_filter_across_tiles_enabled_flag: true,
+            column_width_minus1: [0; MAX_TILE_COLUMNS],
+            row_height_minus1:   [0; MAX_TILE_ROWS],
         }
     }
 }
@@ -124,11 +145,42 @@ impl PictureParameterSet {
         let entropy_coding_sync_enabled_flag = bit_reader.read_bit()?;
 
         let tiles: Option<Tiles> = if tiles_enabled_flag {
-            let uniform_spacing_flag = bit_reader.read_bit()?;
+            // Spec 7.3.2.3.1 ordering: num_tile_columns_minus1 (ue),
+            // num_tile_rows_minus1 (ue), uniform_spacing_flag (u(1)),
+            // optional per-tile widths/heights, then
+            // loop_filter_across_tiles_enabled_flag (u(1)).
             let num_tile_columns_minus1: u8 = read_exp_golomb_ue(&mut bit_reader)? as _;
-            let num_tile_rows_minus1: u8 = read_exp_golomb_ue(&mut bit_reader)? as _;
+            let num_tile_rows_minus1: u8    = read_exp_golomb_ue(&mut bit_reader)? as _;
+            let uniform_spacing_flag        = bit_reader.read_bit()?;
+            let mut column_width_minus1 = [0u16; MAX_TILE_COLUMNS];
+            let mut row_height_minus1   = [0u16; MAX_TILE_ROWS];
+            if !uniform_spacing_flag {
+                // Driver-side decode needs every column / row dimension
+                // explicitly when uniform_spacing_flag is false; the last
+                // entry's width/height is implicit (= remaining CTBs).
+                for i in 0..num_tile_columns_minus1 as usize {
+                    let v: u32 = read_exp_golomb_ue(&mut bit_reader)?;
+                    if i < MAX_TILE_COLUMNS {
+                        column_width_minus1[i] = v as u16;
+                    }
+                }
+                for i in 0..num_tile_rows_minus1 as usize {
+                    let v: u32 = read_exp_golomb_ue(&mut bit_reader)?;
+                    if i < MAX_TILE_ROWS {
+                        row_height_minus1[i] = v as u16;
+                    }
+                }
+            }
+            let loop_filter_across_tiles_enabled_flag = bit_reader.read_bit()?;
 
-            todo!("tiles_enabled_flag == true not supported");
+            Some(Tiles {
+                num_tile_columns_minus1,
+                num_tile_rows_minus1,
+                uniform_spacing_flag,
+                loop_filter_across_tiles_enabled_flag,
+                column_width_minus1,
+                row_height_minus1,
+            })
         } else {
             None
         };
@@ -137,10 +189,12 @@ impl PictureParameterSet {
 
         let deblocking_filter_control_present_flag = bit_reader.read_bit()?;
         let deblocking_filter_control = if deblocking_filter_control_present_flag {
+            // Per spec 7.3.2.3.1, this flag has no PPS-side payload of its
+            // own -- it just permits each slice header to issue its own
+            // deblocking-override block. The slice-header parser doesn't
+            // reach those bits today (it stops after the STRPS), so this
+            // is the only place we need to record the flag.
             let deblocking_filter_override_enabled_flag = bit_reader.read_bit()?;
-            if deblocking_filter_override_enabled_flag {
-                todo!("deblocking_filter_override_enabled_flag == true not supported");
-            }
 
             let pps_deblocking_filter_disabled_flag = bit_reader.read_bit()?;
             let pps_deblocking_filter_params = if !pps_deblocking_filter_disabled_flag {
@@ -152,6 +206,7 @@ impl PictureParameterSet {
             };
 
             Some(DeblockingFilterControl {
+                deblocking_filter_override_enabled_flag,
                 pps_deblocking_filter_disabled_flag,
                 pps_beta_offset_div2: pps_deblocking_filter_params.map(|x| x.0),
                 pps_tc_offset_div2: pps_deblocking_filter_params.map(|x| x.1),

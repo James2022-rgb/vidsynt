@@ -354,12 +354,27 @@ pub struct VidsyntHevcTiles {
     pub num_tile_rows_minus1: u8,
     pub uniform_spacing_flag: u8,  // bool
     pub loop_filter_across_tiles_enabled_flag: u8,  // bool
+    /// Per-column widths in CTBs, each minus 1. The first
+    /// `num_tile_columns_minus1` entries are valid; the rest are 0.
+    /// All-zero when `uniform_spacing_flag != 0`. Sized to the std
+    /// H.265 max (19) to match `StdVideoH265PictureParameterSet`.
+    pub column_width_minus1: [u16; 19],
+    /// Per-row heights in CTBs, each minus 1. Same semantics as
+    /// `column_width_minus1` but for rows. Max 21 entries per std H.265.
+    pub row_height_minus1: [u16; 21],
 }
 
 /// Deblocking filter control
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct VidsyntHevcDeblockingFilterControl {
+    /// When true, slice headers MAY override the PPS deblocking parameters
+    /// via their own `deblocking_filter_override_flag`. Carries no
+    /// additional syntax in the PPS itself, but consumers MUST forward
+    /// this flag when reconstructing a `StdVideoH265PictureParameterSet`
+    /// for hardware video decode -- otherwise the driver will mis-parse
+    /// the slice headers.
+    pub deblocking_filter_override_enabled_flag: u8,  // bool
     pub pps_deblocking_filter_disabled_flag: u8,  // bool
     /// Only valid if pps_deblocking_filter_disabled_flag is false, otherwise ignored
     pub pps_beta_offset_div2: i8,

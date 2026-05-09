@@ -108,12 +108,16 @@ fn convert_tiles(rust_tiles: &RustTiles) -> VidsyntHevcTiles {
         num_tile_rows_minus1: rust_tiles.num_tile_rows_minus1,
         uniform_spacing_flag: if rust_tiles.uniform_spacing_flag { 1 } else { 0 },
         loop_filter_across_tiles_enabled_flag: if rust_tiles.loop_filter_across_tiles_enabled_flag { 1 } else { 0 },
+        column_width_minus1: rust_tiles.column_width_minus1,
+        row_height_minus1:   rust_tiles.row_height_minus1,
     }
 }
 
 /// Helper function to convert Rust DeblockingFilterControl to C type
 fn convert_deblocking_filter_control(rust_dfc: &RustDeblockingFilterControl) -> VidsyntHevcDeblockingFilterControl {
     VidsyntHevcDeblockingFilterControl {
+        deblocking_filter_override_enabled_flag:
+            if rust_dfc.deblocking_filter_override_enabled_flag { 1 } else { 0 },
         pps_deblocking_filter_disabled_flag: if rust_dfc.pps_deblocking_filter_disabled_flag { 1 } else { 0 },
         // For Option<i8> fields, use 0 as sentinel when None (since valid range is typically -12 to +12)
         pps_beta_offset_div2: rust_dfc.pps_beta_offset_div2.unwrap_or(0),
