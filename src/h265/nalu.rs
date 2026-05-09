@@ -38,6 +38,20 @@ pub enum NaluType {
     ///
     /// `R` signifies a reference picture.
     TrailR = 1,
+    /// `TSA_N`. _Coded slice segment of a TSA picture_.
+    /// `N` signifies a non-reference picture.
+    /// A TSA(Temporal Sub-layer Access) picture indicates a position at
+    /// which up-switching to a higher temporal sub-layer is possible.
+    TsaN = 2,
+    /// `TSA_R`. _Coded slice segment of a TSA picture_. Reference picture.
+    TsaR = 3,
+    /// `STSA_N`. _Coded slice segment of an STSA picture_.
+    /// `N` signifies a non-reference picture.
+    /// A STSA(Step-wise Temporal Sub-layer Access) picture is similar to
+    /// TSA but only at the next-higher sub-layer.
+    StsaN = 4,
+    /// `STSA_R`. _Coded slice segment of an STSA picture_. Reference picture.
+    StsaR = 5,
     /// `RADL_N`. _Coded slice segment of a RADL picture_.
     ///
     /// `N` signifies a non-reference picture.
@@ -265,10 +279,19 @@ impl TryFrom<u8> for NaluType {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
-            0 => Ok(Self::TrailN),
-            1 => Ok(Self::TrailR),
-            8 => Ok(Self::RaslN),
-            9 => Ok(Self::RaslR),
+            0  => Ok(Self::TrailN),
+            1  => Ok(Self::TrailR),
+            2  => Ok(Self::TsaN),
+            3  => Ok(Self::TsaR),
+            4  => Ok(Self::StsaN),
+            5  => Ok(Self::StsaR),
+            6  => Ok(Self::RadlN),
+            7  => Ok(Self::RadlR),
+            8  => Ok(Self::RaslN),
+            9  => Ok(Self::RaslR),
+            10 => Ok(Self::RsvVclN10),
+            12 => Ok(Self::RsvVclN12),
+            14 => Ok(Self::RsvVclN14),
             16 => Ok(Self::BlaWLp),
             17 => Ok(Self::BlaWRadl),
             18 => Ok(Self::BlaNLp),
@@ -363,13 +386,30 @@ impl NaluValue {
         let rbsp_reader = &mut rbsp_reader;
 
         match nalu_header.nal_unit_type {
-            NaluType::TrailR
-            | NaluType::TrailN
+            // All VCL NAL types (0..31) are coded slice segments. Some
+            // are reserved (RsvVcl*, RsvIrapVcl*) but if the encoder
+            // emits them they're still parsed as slice segments.
+            NaluType::TrailN
+            | NaluType::TrailR
+            | NaluType::TsaN
+            | NaluType::TsaR
+            | NaluType::StsaN
+            | NaluType::StsaR
+            | NaluType::RadlN
+            | NaluType::RadlR
+            | NaluType::RaslN
+            | NaluType::RaslR
+            | NaluType::RsvVclN10
+            | NaluType::RsvVclN12
+            | NaluType::RsvVclN14
+            | NaluType::BlaWLp
+            | NaluType::BlaWRadl
+            | NaluType::BlaNLp
             | NaluType::IdrWRadl
             | NaluType::IdrNLp
             | NaluType::CraNut
-            | NaluType::RaslN
-            | NaluType::RaslR => {
+            | NaluType::RsvIrapVcl22
+            | NaluType::RsvIrapVcl23 => {
                 let value = SliceSegmentLayer::from_rbsp_reader(
                     rbsp_reader,
                     rbsp_length,
